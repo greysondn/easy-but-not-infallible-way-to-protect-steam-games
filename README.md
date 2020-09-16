@@ -1,82 +1,95 @@
-# Introducción
-El día 03/08/2020 y tras 2 años de trabajo, publiqué mi primer juego en Steam, [Cursed Gem](https://store.steampowered.com/app/1194480/Cursed_Gem/). Desgraciadamente el juego terminó publicado en páginas piratas de cracks/torrents a las **24h**. Quiero recalcar que si mi juego ha sido pirateado, significa que es lo suficientemente atractivo como para que alguien se tome la molestia en piratearlo. Además hay varios artículos que hablan sobre cómo este fenómeno puede traducirse como una campaña de márketing y dar mayor visibilidad a pequeños desarrolladores indie como yo.
+# Translation Preface
+This was written by aikoncwd in Spanish, and is here with a translation with minor cleanup and changes to idiomatic English because I barely speak Spanish. It likely is incorrectly translated, but should be good enough to get the point across, hopefully.
 
-*Este artículo no pretende debatir sobre si es bueno o no que pirateen tu software*, o si es bueno o no el uso de DRM, o si es bueno o no permitir/denegar el acceso a tu juego pirata. Simplemente quiero compartir un método sencillo de implementar, que añade una pequeña capa de protección a tu juego para detectar si el jugador lo ha comprado o lo ha pirateado. En ese momento es decisión tuya de implementar la acción que más desees, por ejemplo mostrar un amigable mensaje o directamente bloquear el juego. Empezamos?
+Please do not harass aikoncwd about this translation. I've done it just so I can see it laid out for myself.
 
-# Algo que debes saber sobre los sistemas de protección
-**No existe ningún método 100% infalible que permita protejer tu juego/aplicación.** Da igual lo complejo que sea el sistema, da igual la cantidad de encriptación y ofuscación que utilices, da absolutamente igual. Cualquier sistema que implementes podrá ser crackeado/pirateado si caen en manos experimentadas y se le dedica el tiempo suficiente.
+I will be accepting pulls for translation cleanup until early 2021 nearly unconditionally.
 
-Los sistemas de protección de hoy en día se basan en complicar mucho la tarea para el cracker, de tal forma que el crack aparezca varios días (o semanas!) después de la publicación del juego, consiguiendo que jugadores impacientes terminen comprando el juego en lugar de esperar el crack. De hecho es muy común que empresas grandes decidan actualizar y eliminar el DRM de sus juegos el día siguiente que haya sido crackeado. Estos sistemas de protección simplemente buscan ganar tiempo.
+~ greysondn
 
-Dicho esto, no creo que sea necesario recordarlo, pero **el sistema que he implementado en mi juego tampoco es infalible.** Si un cracker le dedica tiempo, terminará pirateando el juego. La gracia de este sistema que voy a explicar es que el cracker no sabe que su "crack" no funciona, convirtiendo el juego pirateado en una versión "demo" del juego para que, con un poco de suerte, el jugador pirata decida comprarlo.
+# Introduction
+On 08/03/2020 and after 2 years of work, I published my first game on Steam, Cursed Gem. Unfortunately the game ended up published on pirate cracks / torrents pages at 24h. I want to emphasize that if my game has been hacked, it means that it is attractive enough for someone to bother to hack it. In addition, there are several articles that talk about how this phenomenon can be translated as a marketing campaign and give greater visibility to small indie developers like me.
 
-# Escenario, herramientas, víctima, protector y verdugo.
-### El Escenario
-**Cursed Gem** es un juego programado en [Godot Engine](https://godotengine.org/). No quiero entrar en detalles ya que el artículo se alargaría mucho, pero básicamente tenemos que saber que cuando exportamos un juego, lo que realmente estamos obteniendo es una copia del motor del juego (el engine, sin las herramientas de edición) y todo nuestro código fuente empaquetado en un fichero **PCK**. En otros motores de juego lo que normalmente obtenemos es una compilación, es decir, nuestro código fuente es linkado y compilado, generando un binario único que se puede ejecutar/jugar. Con Godot eso no ocurre ya que no existe compilación. GDScript es un lenguaje interpretado (como Python) y eso nos otorga muchas ventajas y debilidades.
+*This article is not intended to discuss whether or not it is good to have your software pirated, or whether or not it is good to use DRM, or whether it is good or not to allow / deny access to your pirated game*. I just want to share a simple method to implement, which adds a little layer of protection to your game to detect if the player has bought or hacked it. At that moment it is your decision to implement the action you most want, for example showing a friendly message or directly blocking the game. We start?
 
-*Qué significa?* Pues que es muy fácil revertir el proceso de empaquetado y obtener el código fuente a partir del fichero **PCK**. Si el cracker decide "atacar" nuestro juego desempaquetando el **PCK**, le será muy fácil descubrir nuestro sistema y podrá piratear de nuevo el juego. Por suerte, los crackers no suelen hacer este proceso ya que es laborioso. Solo recurren a él cuando sus herramientas básicas fallan por algún motivo.
+# Something you should know about protection systems
+**There is no 100% foolproof method to protect your game / application.** No matter how complex the system is, no matter how much encryption and obfuscation you use, it doesn't matter. Any system you implement can be cracked / hacked if they fall into experienced hands and enough time is spent on it.
 
-*Cuál será nuestro objetivo?* Hacer creer que el cracker ha podido piratear nuestro juego con sus herramientas básicas, pero hacer saltar la protección/bloqueo tras varios minutos/horas de juego. Así el cracker no sabrá nunca que su crack no funciona y tampoco decidirá utilizar técnicas más avanzadas (como desempaquetar el **PCK** que he comentado antes.)
+Today's protection systems are based on making the task very difficult for the cracker, such that the crack appears several days (or weeks!) After the publication of the game, getting impatient players to end up buying the game instead. to wait for the crack. In fact, it is very common for large companies to decide to update and remove the DRM from their games the day after it has been cracked. These protection systems simply seek to buy time.
 
-### Las herramientas
-- **Godot Engine:** El sistema de protección se implementa directamente en el código de nuestro juego, así que nuestra herramienta principal será Godot Engine.
-- **Generador de checksums:** Cualquier herramienta que nos permita calcular el [checksum](https://en.wikipedia.org/wiki/Checksum) de un fichero, mi favorita es [HastTab](http://implbits.com/products/hashtab/) que se integra perfectamente en el explorador de ficheros de Windows.
-- **Steam SDK:** El juego está publicado en Steam, y por tanto usamos su SDK/DLL
+That said, I don't think there is a need to remember, but **the system that I have implemented in my game is not foolproof either**. If a cracker spends time on it, they will end up hacking the game. The grace of this system that I am going to explain is that the cracker does not know that his "crack" does not work, turning the pirated game into a "demo" version of the game so that, with a bit of luck, the pirate player decides to buy it.
 
-### La Víctima
-La victima, por suerte o por desgracia, será nuestro juego. Al tratarse de un proyecto hecho en **Godot**, tenemos 2 ficheros que proteger, el **EXE** y el **PCK**. Nuestra protección se encargará de comprobar la integridad del engine (el fichero **EXE**) así como la integridad del SDK/DLL de Steam. Luego añadiremos "checks" adicionales que nos permitirán saber si el juego se ejecuta de forma legal o pirata. Todas estas comprobaciones harán que el cracker no pueda utilizar sus herramientas básicas y tenga que dedicar parte de su tiempo y esfuerzo en eliminar todas las protecciones. *El éxito de este sistema reside en hacer creer que el cracker ha consegido piratear el sotware, para evitar que decida utilizar otras técnicas avanzadas.*
+# Stage, tools, victim, protector and executioner.
+### Stage
+**Cursed Gem** Cursed Gem is a game programmed on Godot Engine. I don't want to go into details as the article would take a long time, but basically we have to know that when we export a game, what we are really getting is a copy of the game engine (the engine, without the editing tools) and all our code source packaged in a PCK file. In other game engines what we normally get is a compilation, that is, our source code is linked and compiled, generating a unique binary that can be executed / played. With Godot this does not happen since there is no compilation. GDScript is an interpreted language (like Python) and that gives us many advantages and weaknesses.
 
-### El protector
-Queremos publicar nuestro juego en **Steam**, y por tanto hemos de utilizar su SDK oficial. Para que nuestro juego pueda "hablar" con **Steam**, haremos llamadas utilizando su DLL como pasarela. Por ejemplo si queremos desbloquear un logro, el juego simplemente cargará la librería de **Steam** y llamará a la función `Steam.setAchievement("achievement_example")`, si queremos comprobar si **Steam** está ejecutándose en el PC podemos llamar a la función `Steam.loggedOn()`, o si queremos comprobar el ID del jugador de **Steam**, podemos llamar la función `Steam.getSteamID()`.
+What does it mean? Well, it is very easy to reverse the packaging process and obtain the source code from the PCK file. If the cracker decides to "attack" our game by unpacking the PCK, it will be very easy for him to discover our system and he will be able to hack the game again. Fortunately, crackers do not usually do this process as it is laborious. They only turn to him when their basic tools fail for some reason.
 
-Todas estas funciones están ya programadas e integradas en una DLL que **Steam** nos ofrece llamada `steam_api.dll` o `steam_api64.dll`, el listado de funciones disponibles lo tenemos [aquí](https://partner.steamgames.com/doc/api). Este es nuestro protector, ya que podemos de una forma fácil y rápida comprobar si el usuario actual tiene **Steam** abierto, y si lo tiene, comprobar si posee (ha comprado) nuestro juego. Dicha comprobación se obtiene a través de la función [BIsSubscribed](https://partner.steamgames.com/doc/api/ISteamApps). Os dejo un ejemplo:
+What will our goal be? Make believe that the cracker has been able to hack our game with his basic tools, but break the protection / lock after several minutes / hours of play. This way the cracker will never know that his crack does not work and will not decide to use more advanced techniques (such as unpacking the PCK that I mentioned before.)
+
+### The tools
+- **Godot Engine:** The protection system is implemented directly in the code of our game, so our main tool will be Godot Engine.
+- **Checksum generator:** Any tool that allows us to calculate the checksum of a file, my favorite is HastTab, which integrates perfectly into the Windows file explorer.
+- **Steam SDK:** The game is published on Steam, and therefore we use its SDK / DLL
+
+### The victim
+The victim, luckily or unfortunately, will be our game. Being a project made in **Godot**, we have 2 files to protect, the **EXE** and the **PCK**. Our protection will be in charge of checking the integrity of the engine (the **EXE** file) as well as the integrity of the Steam SDK / DLL. Then we will add additional "checks" that will allow us to know if the game is running legally or pirated. All these checks will make the cracker unable to use its basic tools and will have to spend part of its time and effort removing all the protections. *The success of this system lies in making people believe that the cracker has succeeded in hacking the sotware, to prevent them from deciding to use other advanced techniques.*
+
+### The protector
+We want to publish our game on **Steam**, and therefore we have to use its official SDK. In order for our game to "talk" to **Steam**, we will make calls using its DLL as a gateway. For example if we want to unlock an achievement, the game will simply load the **Steam** library and call the function `Steam.setAchievement (" achievement_example ")`, if we want to check if **Steam** is running on the PC We can call the `Steam.loggedOn ()` function, or if we want to check the player ID of **Steam**, we can call the `Steam.getSteamID ()` function.
+
+All these functions are already programmed and integrated in a DLL that ** Steam ** offers us called `steam_api.dll` or` steam_api64.dll`, we have the list of available functions [here] (https: //partner.steamgames .com / doc / api). This is our protector, since we can easily and quickly check if the current user has ** Steam ** open, and if they do, check if they own (have bought) our game. This verification is obtained through the [BIsSubscribed] function (https://partner.steamgames.com/doc/api/ISteamApps). I leave you an example:
 
 ![](https://i.imgur.com/oWSeqzQ.png)  
 *source: https://gramps.github.io/GodotSteam/tutorials-initializing.html*
 
-### El verdugo
-Para un cracker, lo más sencillo es interceptar las llamadas que hace tu juego sobre la API de Steam, modificando la respuesta.
-¿Qué ocurriría si un cracker consigue que la DLL de Steam devuelva `true` siempre a la pregunta de `Steam.IsSubscribed()`? Pues que tu juego pensaría que el usuario/jugador posee una copia legítima en Steam, ya que la DLL siempre devolvería `true`. Bien pues esta técnica es la herramienta principal de los crackers hoy en día. Pero... cómo lo consiguen? Muy fácil, *intercambiando la DLL oficial de Steam por una DLL modificada.* Veamos un ejemplo real...
+### The executioner
+For a cracker, the simplest thing is to intercept the calls your game makes on the Steam API, modifying the response.
 
-# Emuladores de Steam, la navaja suiza de los crackers
-Este es el método más usado hoy en día para piratear juegos de Steam. En internet existen implementaciones/copias de la DLL oficial de Steam `steam_api64.dll` ligeramente modificadas para que ciertas funciones devuelvan siempre el mismo resultado sin preguntar a los servidores oficiales de Steam. Estas implementaciones de la DLL se conocen como **"emuladores"**. Haciendo que, por ejemplo, siempre devuelvan `true` cuando el juego llama a la función `Steam.IsSubscribed()`. El cracker simplemente tiene que hacer lo siguiente:
+What if a cracker gets the Steam DLL to always return `true` to the` Steam.IsSubscribed () `question? Well, your game would think that the user / player owns a legitimate copy on Steam, since the DLL would always return `true`. Well, this technique is the main tool of crackers today. But ... how do they get it? Very easy, * exchanging the official Steam DLL for a modified DLL. * Let's see a real example ...
 
-- **Comprar** el juego oficial en Steam.
-- **Descargar** el juego e instalarlo.
-- Crear una **copia** de los ficheros/juego en otra carpeta.
-- **Cambiar** el fichero `steam_api64.dll` oficial por el `steam_api64.dll` crackeado del emulador.
-- **Comprobar** que el juego se ejecuta con la DLL pirata.
-- **Desinstalar** el juego.
-- Devolver el juego (**refund**) para recuperar el dinero.
-- Subir un ZIP con la copia del juego + DLL pirata a una web de **torrents**.
+# Steam emulators, the Swiss army knife of crackers
+This is the most used method today to hack Steam games. On the internet there are implementations / copies of the official Steam DLL `steam_api64.dll` slightly modified so that certain functions always return the same result without asking the official Steam servers. These DLL implementations are known as ** "emulators" **. Making them, for example, always return `true` when the game calls the` Steam.IsSubscribed () `function. The cracker simply has to do the following:
 
-Uno de los emuladores más utilizados actualmente es el [SteamEmu de Goldberg](https://gitlab.com/Mr_Goldberg/goldberg_emulator), no estoy dando información secreta ni mucho menos. Cualquiera que descargue un juego pirata y examine la DLL verá que pone Goldberg. Es información ampliamente conocida en los foros de internet.
+- ** Buy ** the official game on Steam.
+- ** Download ** the game and install it.
+- Create a ** copy ** of the files / game in another folder.
+- ** Change ** the official `steam_api64.dll` file to the cracked` steam_api64.dll` from the emulator.
+- ** Check ** that the game runs with the pirated DLL.
+- ** Uninstall ** the game.
+- Return the game (** refund **) to get the money back.
+- Upload a ZIP with the copy of the game + pirated DLL to a ** torrents ** website.
 
-Para este ejemplo tenemos el código fuente oficial de la DLL pirata, y podemos comprobar como han re-implementado la función `Steam.IsSubscribed()`:
+One of the most used emulators currently is the [Goldberg SteamEmu] (https://gitlab.com/Mr_Goldberg/goldberg_emulator), I am not giving secret information far from it. Anyone who downloads a pirated game and examines the DLL will see that it says Goldberg. It is widely known information on internet forums.
 
-    bool Steam_Apps::BIsSubscribed()
-    {
-        PRINT_DEBUG("BIsSubscribed\n");
-        return true;
-    }
+For this example we have the official source code of the pirate DLL, and we can check how they have re-implemented the `Steam.IsSubscribed ()` function:
 
-*Imprime una línea de debug y devuelve true!!! independientemente de que el usuario haya comprado o no el juego!!*
-Otras muchas funciones de la DLL oficial han sido modificadas, como por ejemplo la compra de DLCs. Esto es un verdadero horror, ya que cambiando la DLL oficial por la DLL del emulador consiguen que el propio juego no sepa que está siendo pirateado.
+```cpp
+bool Steam_Apps::BIsSubscribed()
+{
+    PRINT_DEBUG("BIsSubscribed\n");
+    return true;
+}
+```
 
-# Identificando una copia pirata
-Tenemos diferentes formas para ello. Podemos comprobar la ruta/path del juego, comprobar los argumentos adicionales de ejecución, comprobar la existencia de ciertos ficheros o carpetas, etc... pero empezaremos por lo más obvio: Que el juego detecte si el fichero `steam_api64.dll` es el **oficial** o uno **modificado**.
+* Print a debug line and return true !!! regardless of whether or not the user bought the game !! *
+Many other functions of the official DLL have been modified, such as the purchase of DLCs. This is a real horror, since changing the official DLL for the emulator DLL makes the game itself not aware that it is being hacked.
 
-### Comprobando la autenticidad de steam_api64.dll
-En informática y en el mundo de las telecomunicaciones existe algo llamado [checksum](https://en.wikipedia.org/wiki/Checksum). Básicamente es una función que realiza cálculos matemáticos sobre una serie de datos y devuelve un resultado. Un mismo fichero siempre tiene el mismo resultado, si cambiamos una sola letra de ese fichero, el resultado de su checksum será diferente. De esta forma es muy fácil garantizar la integridad de una información o fichero.
+# Identifying a pirated copy
+We have different ways for it. We can check the path of the game, check the additional execution arguments, check the existence of certain files or folders, etc ... but we will start with the most obvious: That the game detects if the `steam_api64.dll` file is the one ** official ** or one ** modified **.
 
-Existen varias funciones checksum, no voy a entrar en detalles, pero las más utilizadas con **CRC32**, **MD5** y **SHA256**. Lo primero que haremos será calcular el checksum de la DLL oficial:
+### Checking the authenticity of steam_api64.dll
+In computing and in the world of telecommunications there is something called [checksum] (https://en.wikipedia.org/wiki/Checksum). It is basically a function that performs mathematical calculations on a series of data and returns a result. The same file always has the same result, if we change a single letter of that file, the result of its checksum will be different. In this way it is very easy to guarantee the integrity of an information or file.
+
+There are several checksum functions, I will not go into details, but the most used with ** CRC32 **, ** MD5 ** and ** SHA256 **. The first thing we will do is calculate the checksum of the official DLL:
 
 ![](https://i.imgur.com/oMTuXmM.png)
 
-El checksum SHA256 de `steam_api64.dll` oficial es: `A178F19A516023EFC3CC30B1E90FBEDA838D08D4F1FA006B895608D67FA60EAC`
-Si calculamos ahora el SHA256 de la DLL pirata de *Goldberg*, obtendremos un checksum muy diferente: `43C19ECECD799332CC09A56A11A99E90E1FC884061B046F9D1E7203330A3B721`
+The official SHA256 checksum of `steam_api64.dll` is:` A178F19A516023EFC3CC30B1E90FBEDA838D08D4F1FA006B895608D67FA60EAC`
 
-Con una simple función podemos calcular el SHA256 de la DLL del juego y si no coincide con `A178F19A516023EFC3CC30B1E90FBEDA838D08D4F1FA006B895608D67FA60EAC` sabremos indudablemente que el juego es pirata. En ese momento levantaremos un **flag** para, horas más tarde, mostrar una advertencia o bloquear el juego. Os dejo un ejemplo en Godot:
+If we now calculate the SHA256 of the * Goldberg * pirate DLL, we will get a very different checksum: `43C19ECECD799332CC09A56A11A99E90E1FC884061B046F9D1E7203330A3B721`
+
+With a simple function we can calculate the SHA256 of the game DLL and if it does not match `A178F19A516023EFC3CC30B1E90FBEDA838D08D4F1FA006B895608D67FA60EAC` we will undoubtedly know that the game is pirated. At that moment we will raise a ** flag ** to, hours later, show a warning or block the game. I leave you an example in Godot:
 
     func check1() -> bool:
 	    # piracy flag
@@ -90,18 +103,17 @@ Con una simple función podemos calcular el SHA256 de la DLL del juego y si no c
 		    yar = true
 	    return yar
 
-### Comprobando la existencia de ficheros/carpetas no oficiales
-Después de investigar sobre el funcionamiento del emulador de *Goldberg*, descubrí que suele tener un fichero llamado `local_save.txt` y una carpeta llamada `steam_settings`. No es obligatorio que el juego pirata tenga esos ficheros, pero el 100% de juegos piratas que he visto lo tienen, así que siempre es bueno añadir esta comprobación. Os dejo un ejemplo de mi juego "real/oficial" y otra foto del juego pirateado para que veais las diferencias y los ficheros:
+### Checking for unofficial files / folders
+
+After researching how * Goldberg * emulator works, I discovered that it usually has a file called `local_save.txt` and a folder called` steam_settings`. It is not mandatory for the pirate game to have these files, but 100% of pirate games that I have seen do, so it is always good to add this check. I leave you an example of my "real / official" game and another photo of the pirated game so you can see the differences and the files:
 
 ![](https://i.imgur.com/famnOSU.png)  
-Carpeta real. No exite `local_save.txt` ni `steam_settings`. El tamaño de la DLL es pequeño, 257Kb
-
+Real folder. There is no `local_save.txt` or` steam_settings`. The size of the DLL is small, 257Kb
 
 ![](https://i.imgur.com/CCVsIUq.png)  
-Juego pirata! Existe el fichero `local_save.txt` y la carpeta `steam_settings`. La DLL está modificada, su tamaño es enorme!! Aunque eso lo estamos verificando con el checksum, en el punto anterior.
+Pirate game! There is the file `local_save.txt` and the folder` steam_settings`. The DLL is modified, its size is huge !! Although we are verifying that with the checksum, in the previous point.
 
-
-Sabiendo esto, podemos añadir nuevas comprobaciones dentro del código del juego:
+Knowing this, we can add new checks within the game code:
 
     func check2() -> bool:
         # piracy flag
@@ -116,12 +128,14 @@ Sabiendo esto, podemos añadir nuevas comprobaciones dentro del código del jueg
 		    yar = true
          return yar
 
-### Comprobando los argumentos adicionales de ejecución
-Este método me encanta. Independientemente de la DLL o de los ficheros, podemos comprobar la manera en la que el usuario ejecuta el juego.
-Cuando publicamos una aplicación en **Steam**, podemos indicar los argumentos adicionales para ejecutar nuestro juego, pongo un ejemplo:
+### Checking additional execution arguments
+
+I love this method. Regardless of the DLL or the files, we can check the way in which the user runs the game.
+
+When we publish an application on ** Steam **, we can indicate the additional arguments to run our game, I put an example:
 
 ![](https://i.imgur.com/ZRWcI9Z.png)  
-Aquí básicamente indicamos a **Steam** que para ejecutar nuestro juego en Windows, tiene que ejecutar `game.exe -none`. Aunque el usuario ejecute el juego desde un acceso directo, desde la biblioteca o desde juegos recientes... **Steam** siempre pasará el argumento `-none` al ejecutable. Si alguien piratea nuestro juego, lo ejecutará directamente sin el cliente de **Steam** y por tanto jamás pasará el argumento. De esta manera podemos añadir nuestra tercera comprobación:
+Here we basically tell ** Steam ** that to run our game on Windows, it has to run `game.exe -none`. Even if the user runs the game from a shortcut, from the library or from recent games ... ** Steam ** will always pass the `-none` argument to the executable. If someone hacks our game, they will run it directly without the ** Steam ** client and therefore never pass the argument. This way we can add our third check:
 
     func check3() -> bool:
         # piracy flag
@@ -134,11 +148,11 @@ Aquí básicamente indicamos a **Steam** que para ejecutar nuestro juego en Wind
 		    yar = true
 	    return yar
 
-### Proteger la integridad del motor
-Finalmente toca proteger el ejecutable de Godot. Queremos evitar que el cracker modifique el engine para hacer, por ejemplo, que la función `get_sha256()` devuelva siempre el hash correcto, o para evitar que la función `file_exists()` o `get_cmdline_args()` devuelvan valores precocinados y modificados... Comprobaremos el checksum del ejecutable para verificar si el cracker lo ha modificado. Primero calculamos el checksum real:
+### Protect engine integrity
+Finally, it's time to protect the Godot executable. We want to prevent the cracker from modifying the engine to make, for example, that the `get_sha256 ()` function always return the correct hash, or to prevent the `file_exists ()` or `get_cmdline_args ()` function from returning precooked and modified values ... We will check the executable's checksum to see if the cracker has modified it. First we calculate the actual checksum:
 
 ![](https://i.imgur.com/yqgy7Xy.png)  
-Obtenemos un SHA256 de: `E5161680DBD7FBFB1D8D63A1F707AC0FF48CB15E3591EB4E01DDA824EB1667C9`, así que añadimos el check final:
+We get a SHA256 from: `E5161680DBD7FBFB1D8D63A1F707AC0FF48CB15E3591EB4E01DDA824EB1667C9`, so we add the final check:
 
     func check4() -> bool:
         #piracy flag	
@@ -152,29 +166,31 @@ Obtenemos un SHA256 de: `E5161680DBD7FBFB1D8D63A1F707AC0FF48CB15E3591EB4E01DDA82
 		    yar = true
 	    return yar
 
-# Implementar la protección
-Ahora tenemos 4 funciones que devolverán `true` si el juego se ejecuta de forma "pirata" o `false` si se ejecuta de forma legítima y dentro de Steam. Toca decidir qué hacer en caso de detectar el pirateo.
-Lo primero que se nos pasa por la cabeza es realizar estas comprobaciones al arrancar el juego y cerrarlo automáticamente si descibrimos que es pirata, pero esto es muy contraproducente ya que el cracker comprobará si el juego se ejecuta antes de publicar el torrent.
+# Implement protection
+Now we have 4 functions that will return `true` if the game is running" pirated "or` false` if it is running legit and within Steam. You have to decide what to do in case the hacking is detected.
 
-Si el cracker descubre que el juego tiene protección, empezará a utilizar técnicas más agresivas hasta decompilar el juego y saltarse nuestra protección. Yo os recomiendo que estas comprobaciones las hagáis tras un tiempo. Dejad jugar al pirata un par de niveles o un par de horas y luego mostrar un mensaje amigable indicando que el juego es pirata, que por favor lo compre en Steam. *Queremos convertir piratas en compradores, así que lo mejor es poner las cosas fáciles.*
+The first thing that comes to mind is to carry out these checks when starting the game and automatically close it if we discover that it is pirated, but this is very counterproductive since the cracker will check if the game is running before publishing the torrent.
 
-En el caso de **Cursed Gem**, decidí que el actual "savegame" sea compatible con la versión oficial, de esta manera un jugador pirata podrá comprar el juego y continuar jugando sin repetir los primeros niveles.
-Otros desarrolladores han optado por "marcar" los jugadores piratas con alguna skin diferente, sombrero, loro, etc... de esta manera les imposibilitas la opción de hacer streaming o youtube sin pasar por la vergüenza pública de ser un pirata confeso.
+If the cracker discovers that the game has protection, he will start to use more aggressive techniques until decompiling the game and bypassing our protection. I recommend that you do these checks after a while. Let the pirate play a couple of levels or a couple of hours and then show a friendly message stating that the game is pirated, please buy it on Steam. * We want to turn pirates into buyers, so it's best to make things easy. *
 
-Si finalmente decides que quieres bloquear el acceso del juego, puedes usar opciones elegantes. Por ejemplo en GTA-IV, la cámara del jugador se mueve en zig-zag, simulando estar borracho. Haciendo que sea complicadísimo avanzar. En el juego Mafia (creo), era imposible subirse a los coches. En el caso de Cursed Gem, el salto se reduce a la mitad, haciendo que sea imposible avanzar en la aventura:
+In the case of ** Cursed Gem **, I decided that the current "savegame" is compatible with the official version, this way a pirate player can buy the game and continue playing without repeating the first levels.
+
+Other developers have chosen to "mark" pirate players with a different skin, hat, parrot, etc ... in this way you make it impossible for them to stream or YouTube without going through the public shame of being a self-confessed pirate.
+
+If you finally decide that you want to block access to the game, you can use fancy options. For example in GTA-IV, the player's camera moves in a zig-zag fashion, pretending to be drunk. Making it very difficult to move forward. In the Mafia game (I think), it was impossible to get into cars. In the case of Cursed Gem, the jump is cut in half, making it impossible to advance in the adventure:
 
 ![](https://i.imgur.com/q8Oij57.gif)
 
-Mi recomendación es que repartas las 4 comprobaciones en diferentes zonas del juego, haciendo que la tarea de destripar el código sea más compleja. También puedes hacer que una comprobación salte en el nivel 2, y la otra en el nivel 3. Así si el cracker limpia la protección del nivel 2, nunca sabrá que el mensaje salta de nuevo más adelante. Los crackers no completan ni juegan a los juegos, simplemente aplican el crack y compruban que el juego arranca.
+My recommendation is that you distribute the 4 checks in different areas of the game, making the task of gutting the code more complex. You can also make one check jump at level 2, and the other at level 3. So if the cracker clears the protection at level 2, it will never know that the message jumps again later. The crackers do not complete or play the games, they simply apply the crack and verify that the game starts.
 
-# Algo a tener en cuenta si tu juego es multiplataforma
-Si tu juego decides publicarlo para Linux y MacOS, es necesario que apliques estas protecciones únicamente en la versión Windows. Los checksum son diferentes en otro sistema operativo, así que tendrás que comprobar esto primero, te pongo un ejemplo:
+# Something to keep in mind if your game is cross-platform
+If your game decides to publish it for Linux and MacOS, it is necessary that you apply these protections only in the Windows version. The checksum are different in another operating system, so you will have to check this first, I give you an example:
 
     if OS.get_name() != "Windows":
 	    return false
 
-De esta manera si el juego no es de Windows, no realizaré ninguna comprobación. Las versiones piratas de los juegos son practicamente inexistentes para Linux y MacOS. Pero eso ya lo dejo en tus manos si deseas aplicar protecciones en esos sistemas
+This way if the game is not from Windows, I will not do any checks. Pirated versions of the games are practically non-existent for Linux and MacOS. But I leave that in your hands if you want to apply protections in those systems
 
-# Perdón por insistir: Este método no es infalible 100%
-Me estoy repitiendo mucho, pero quiero dejar esto bien claro: **Ni este sistema ni ningún otro sistema es 100% efectivo contra el pirateo.**
-La parte fuerte de este sistema es poder detectar una versión pirata y lanzar el aviso horas más tarde, haciendo que el cracker no sepa que tenemos una protección adicional.
+# Sorry to insist: This method is not infallible 100%
+I am repeating myself a lot, but I want to make this very clear: ** Neither this system nor any other system is 100% effective against hacking. **
+The strong part of this system is being able to detect a pirated version and launch the warning hours later, so that the cracker does not know that we have additional protection.
