@@ -8,7 +8,7 @@ I will be accepting pulls for translation cleanup until early 2021 nearly uncond
 ~ greysondn
 
 # Introduction
-On 08/03/2020 and after 2 years of work, I published my first game on Steam, Cursed Gem. Unfortunately the game ended up published on pirate cracks / torrents pages at 24h. I want to emphasize that if my game has been hacked, it means that it is attractive enough for someone to bother to hack it. In addition, there are several articles that talk about how this phenomenon can be translated as a marketing campaign and give greater visibility to small indie developers like me.
+On 08/03/2020 and after 2 years of work, I published my first game on Steam, [Cursed Gem](https://store.steampowered.com/app/1194480/Cursed_Gem/). Unfortunately the game ended up published on pirate cracks / torrents pages at 24h. I want to emphasize that if my game has been hacked, it means that it is attractive enough for someone to bother to hack it. In addition, there are several articles that talk about how this phenomenon can be translated as a marketing campaign and give greater visibility to small indie developers like me.
 
 *This article is not intended to discuss whether or not it is good to have your software pirated, or whether or not it is good to use DRM, or whether it is good or not to allow / deny access to your pirated game*. I just want to share a simple method to implement, which adds a little layer of protection to your game to detect if the player has bought or hacked it. At that moment it is your decision to implement the action you most want, for example showing a friendly message or directly blocking the game. We start?
 
@@ -21,7 +21,7 @@ That said, I don't think there is a need to remember, but **the system that I ha
 
 # Stage, tools, victim, protector and executioner.
 ### Stage
-**Cursed Gem** Cursed Gem is a game programmed on Godot Engine. I don't want to go into details as the article would take a long time, but basically we have to know that when we export a game, what we are really getting is a copy of the game engine (the engine, without the editing tools) and all our code source packaged in a PCK file. In other game engines what we normally get is a compilation, that is, our source code is linked and compiled, generating a unique binary that can be executed / played. With Godot this does not happen since there is no compilation. GDScript is an interpreted language (like Python) and that gives us many advantages and weaknesses.
+**Cursed Gem** Cursed Gem is a game programmed on [Godot Engine](https://godotengine.org/). I don't want to go into details as the article would take a long time, but basically we have to know that when we export a game, what we are really getting is a copy of the game engine (the engine, without the editing tools) and all our code source packaged in a PCK file. In other game engines what we normally get is a compilation, that is, our source code is linked and compiled, generating a unique binary that can be executed / played. With Godot this does not happen since there is no compilation. GDScript is an interpreted language (like Python) and that gives us many advantages and weaknesses.
 
 What does it mean? Well, it is very easy to reverse the packaging process and obtain the source code from the PCK file. If the cracker decides to "attack" our game by unpacking the PCK, it will be very easy for him to discover our system and he will be able to hack the game again. Fortunately, crackers do not usually do this process as it is laborious. They only turn to him when their basic tools fail for some reason.
 
@@ -29,7 +29,7 @@ What will our goal be? Make believe that the cracker has been able to hack our g
 
 ### The tools
 - **Godot Engine:** The protection system is implemented directly in the code of our game, so our main tool will be Godot Engine.
-- **Checksum generator:** Any tool that allows us to calculate the checksum of a file, my favorite is HastTab, which integrates perfectly into the Windows file explorer.
+- **Checksum generator:** Any tool that allows us to calculate the [checksum](https://en.wikipedia.org/wiki/Checksum) of a file, my favorite is [HastTab](http://implbits.com/products/hashtab/), which integrates perfectly into the Windows file explorer.
 - **Steam SDK:** The game is published on Steam, and therefore we use its SDK / DLL
 
 ### The victim
